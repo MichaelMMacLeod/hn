@@ -34,4 +34,4 @@ propagate (Net i (w : ws) (b : bs)) =
         layer = propStep i w b
 
 readNet :: FilePath -> IO Net
-readNet f = readFile f >>= \n -> return . read $ n
+readNet f = fmap read (readFile f)
