@@ -35,3 +35,6 @@ propagate (Net a (w : ws) (b : bs)) =
 
 readNet :: FilePath -> IO Net
 readNet f = fmap read (readFile f)
+
+loss :: Floating a => Matrix a -> Matrix a -> Matrix a
+loss target actual = fmap (\n -> 0.5 * n ** 2) (target - actual)
