@@ -2,16 +2,16 @@ module Network
     (   Net (..)
     ,   propagate
     ,   readNet
+    ,   loss
     )   where
 
 import Matrix
 
 data Net = Net 
-    { activations :: Matrix Double
-    , weights :: [Matrix Double]
-    , biases :: [Matrix Double]
-    } 
-    deriving (Read, Show, Eq)
+    {   activations :: Matrix Double
+    ,   weights :: [Matrix Double]
+    ,   biases :: [Matrix Double]
+    }   deriving (Read, Show, Eq)
 
 sigmoid :: Floating a => a -> a
 sigmoid x = 1 / (1 + exp (-x))
