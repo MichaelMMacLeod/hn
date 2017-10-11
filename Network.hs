@@ -1,28 +1,37 @@
-module Network (sigmoid, output, activate) where
-
-
+module Network 
+    (   Net (..)
+    ,   propagate
+    ,   readNet
+    )   where
 
 import Matrix
 
-
-
--- Forwards propagation
-
+data Net = Net 
+    { inputs :: Matrix Double
+    , weights :: [Matrix Double]
+    , biases :: [Matrix Double]
+    } 
+    deriving (Read, Show, Eq)
 
 sigmoid :: Floating a => a -> a
 sigmoid x = 1 / (1 + exp (-x))
 
-
 output :: Floating a => Matrix a -> Matrix a -> Matrix a -> Matrix a
-output inputs weights biases = weights * inputs + biases
-
+output i w b = w * i + b
 
 activate :: Floating a => Matrix a -> Matrix a
 activate = fmap sigmoid
 
+propStep :: Floating a => Matrix a -> Matrix a -> Matrix a -> Matrix a
+propStep i w b = activate (output i w b)
 
-propagate :: Floating a => Matrix a -> Matrix a -> Matrix a -> Matrix a
-propagate inputs weights biases = activate (output inputs weights biases)
+propagate :: Net -> [Matrix Double]
+propagate (Net _ [] _) = []
+propagate (Net _ _ []) = []
+propagate (Net i (w : ws) (b : bs)) =
+    layer : propagate (Net layer ws bs)
+    where
+        layer = propStep i w b
 
-propagation :: Floating a => Matrix a -> [Matrix a] -> [Matrix a] -> Matrix a
--- iterates propagate until the output layer is reached
+readNet :: FilePath -> IO Net
+readNet f = readFile f >>= \n -> return . read $ n

@@ -1,9 +1,11 @@
 module Main where
 
-
-
 import Network
 
+main :: IO ()
+main = do
+    net <- readNet state
+    print $ propagate net
 
-
-main = print 42
+state :: String
+state = "state.txt"
