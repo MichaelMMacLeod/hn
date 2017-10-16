@@ -5,9 +5,10 @@ module Matrix
     ,   (|^)
     ,   (|^^)
     ,   (|**)
+    ,   transpose
     )   where
 
-    import Data.List (transpose)
+    import qualified Data.List (transpose)
 
     newtype Matrix a = Matrix [[a]] deriving (Read, Eq, Show)
 
@@ -17,9 +18,14 @@ module Matrix
     instance (Num a) => Num (Matrix a) where
         Matrix a + Matrix b = Matrix (zipWith (zipWith (+)) a b)
         Matrix a - Matrix b = Matrix (zipWith (zipWith (-)) a b)
+
         Matrix a * Matrix b = 
-            Matrix [[sum $ zipWith (*) a' b' | b' <- transpose b] 
-                                             | a' <- a ]
+            if length (head a) /= length b then
+                error "Bad matrix multiplication"
+            else
+                Matrix [[sum $ zipWith (*) a' b' | b' <- Data.List.transpose b] 
+                                                 | a' <- a ]
+
         negate (Matrix a) = Matrix (map (map negate) a)
         fromInteger x = Matrix (iterate (0:) (fromInteger x : repeat 0))
         abs x = x
@@ -42,3 +48,7 @@ module Matrix
 
     (|**) :: (Floating a) => Matrix a -> a -> Matrix a
     m |** a = fmap (**a) m
+
+    -- transpose
+    transpose :: Matrix a -> Matrix a
+    transpose (Matrix a) = Matrix (Data.List.transpose a)

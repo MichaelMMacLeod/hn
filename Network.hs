@@ -1,3 +1,15 @@
+{-
+https://www.youtube.com/watch?v=gl3lfL-g5mA
+
+-- arbitrary layer, l
+delta[l] = (weights[l+1] * delta[l+1]) |*| sigma' output[l]
+
+-- last layer, L
+delta[L] = (activations[L] - target[L]) |*| sigma' output[L]
+
+
+-}
+
 module Network 
     (   Net (..)
     ,   propagate
