@@ -21,24 +21,30 @@ module Backprop
     transfer' :: Floating a => Matrix a -> Matrix a
     transfer' = fmap sigmoid'
 
+    type Input a = Matrix a
+    type Weights a = [Matrix a]
+    type Biases a = [Matrix a]
+    type Outputs a = [Matrix a]
+    type Activations a = [Matrix a]
+
+    -- Returns the output layers of a neural network.
     outputs :: Floating a
-        => [Matrix a]
-        -> [Matrix a]
-        -> Matrix a
-        -> [Matrix a]
-    outputs (w:weights) (b:biases) input = 
-        layer : others
-        where 
-            layer = transpose w * input + b
-            others = outputs weights biases (transfer layer)
+        => Weights a
+        -> Biases a
+        -> Input a
+        -> Outputs a
+    outputs (w:ws) (b:bs) i = 
+        layer : outputs ws bs (transfer layer)
+        where
+            layer = transpose w * i + b
     outputs [] [] _ = []
     outputs _ _ _ = error "Invalid matrix configuration"
-
+    
     activations :: Floating a
-        => [Matrix a]
-        -> [Matrix a]
-        -> Matrix a
-        -> [Matrix a]
+        => Weights a
+        -> Biases a
+        -> Input a
+        -> Activations a
     activations weights biases input =
         input : _activations weights biases input
         where
