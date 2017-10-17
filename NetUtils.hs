@@ -60,8 +60,10 @@ module NetUtils
         -> [Matrix a]
     activations net input =
         let
-            act (w:ws) (b:bs) i = layer : act ws bs layer where
-                layer = transfer (transpose w * i + b)
+            act (w:ws) (b:bs) i = 
+                layer : act ws bs layer 
+                where
+                    layer = transfer (transpose w * i + b)
             act [] [] _ = []
             act _ _ _ = error "Bad neural network configuration."
         in
