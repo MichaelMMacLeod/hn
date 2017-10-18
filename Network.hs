@@ -15,6 +15,7 @@ module Network
     ,   randMatrix
     ,   randWeights
     ,   randBiases
+    ,   randNet
     )   where
 
 
@@ -186,3 +187,11 @@ module Network
         others <- randBiases xs
         return (matrix : others)
     randBiases _ = return []
+
+    -- Generates a randomized Net of correctly-sized weight and bias
+    -- layers using the number of neurons in each activation layer.
+    randNet :: (Floating a, Random a) => [Int] -> IO (Net a)
+    randNet as = do
+        ws <- randWeights as
+        bs <- randBiases (tail as)
+        return (Net ws bs)
