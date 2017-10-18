@@ -168,6 +168,7 @@ module Network
     randMatrix :: (Floating a, Random a) => (Int, Int) -> IO (Matrix a)
     randMatrix (r,c) = fmap Matrix (replicateM r (replicateM c randomIO))
 
+    -- Generates a randomized list of correctly-sized weight layerss.
     randWeights :: (Floating a, Random a) => [Int] -> IO [Matrix a]
     randWeights (x:y:xs) = do
         matrix <- randMatrix (x,y)
