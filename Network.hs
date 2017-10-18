@@ -13,6 +13,7 @@ module Network
     ,   writeNet
     ,   writeTrainingData
     ,   randMatrix
+    ,   randWeights
     )   where
 
 
@@ -166,3 +167,10 @@ module Network
     -- Generates a randomized matrix of size (rows, columns).
     randMatrix :: (Floating a, Random a) => (Int, Int) -> IO (Matrix a)
     randMatrix (r,c) = fmap Matrix (replicateM r (replicateM c randomIO))
+
+    randWeights :: (Floating a, Random a) => [Int] -> IO [Matrix a]
+    randWeights (x:y:xs) = do
+        matrix <- randMatrix (x,y)
+        others <- randWeights (y:xs)
+        return (matrix : others)
+    randWeights _ = return []
