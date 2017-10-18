@@ -14,6 +14,7 @@ module Network
     ,   writeTrainingData
     ,   randMatrix
     ,   randWeights
+    ,   randBiases
     )   where
 
 
@@ -168,10 +169,20 @@ module Network
     randMatrix :: (Floating a, Random a) => (Int, Int) -> IO (Matrix a)
     randMatrix (r,c) = fmap Matrix (replicateM r (replicateM c randomIO))
 
-    -- Generates a randomized list of correctly-sized weight layerss.
+    -- Generates a randomized list of correctly-sized weight layers 
+    -- using the number of neurons in each activation layer.
     randWeights :: (Floating a, Random a) => [Int] -> IO [Matrix a]
     randWeights (x:y:xs) = do
         matrix <- randMatrix (x,y)
         others <- randWeights (y:xs)
         return (matrix : others)
     randWeights _ = return []
+
+    -- Generates a randomized list of correctly-sized bias layers 
+    -- using the number of neurons in each output layer.
+    randBiases :: (Floating a, Random a) => [Int] -> IO [Matrix a]
+    randBiases (x:xs) = do
+        matrix <- randMatrix (x,1)
+        others <- randBiases xs
+        return (matrix : others)
+    randBiases _ = return []
