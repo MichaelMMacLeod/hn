@@ -12,12 +12,14 @@ module Network
     ,   readTrainingData
     ,   writeNet
     ,   writeTrainingData
+    ,   randMatrix
     )   where
 
 
     import Matrix
     import qualified Data.List
-
+    import System.Random
+    import Control.Monad (replicateM)
 
     -- A simple wrapper for a neural network.
 
@@ -160,3 +162,7 @@ module Network
     -- Writes training data to a file.
     writeTrainingData :: (Show a, Floating a) => FilePath -> Training a -> IO ()
     writeTrainingData = (. show) . writeFile
+
+    -- Generates a randomized matrix of size (rows, columns).
+    randMatrix :: (Floating a, Random a) => (Int, Int) -> IO (Matrix a)
+    randMatrix (r,c) = fmap Matrix (replicateM r (replicateM c randomIO))
