@@ -1,5 +1,6 @@
 module Network
     (   Net (..)
+    ,   Training (..)
     ,   transfer
     ,   outputs
     ,   activations
@@ -8,7 +9,9 @@ module Network
     ,   train
     ,   classify
     ,   readNet
+    ,   readTrainingData
     ,   writeNet
+    ,   writeTrainingData
     )   where
 
 
@@ -23,6 +26,10 @@ module Network
         ,   biases :: [Matrix a]
         }   deriving (Read, Show, Eq)
 
+    data Training a = Training
+        {   inputs :: Matrix a
+        ,   targets :: Matrix a
+        }   deriving (Read, Show, Eq)
 
     -- Transfer functions.
 
@@ -107,23 +114,22 @@ module Network
     deltaWeights [] [] = []
     deltaWeights _ _ = error "Bad neural network configuration."
 
-    -- Adjusts a network's weights and biases to better fit the given input to target matrix.
+    -- Adjusts a network's weights and biases to better fit the training data.
     train :: (Floating a) 
-        => Net a 
-        -> Matrix a 
-        -> Matrix a 
+        => Net a
+        -> Training a
         -> [Net a]
-    train net input target =
+    train net tdata =
         let
-            output = outputs net input
-            activation = activations net input
-            delta = deltas (Net (drop 1 (weights net)) (biases net)) output target
+            output = outputs net (inputs tdata)
+            activation = activations net (inputs tdata)
+            delta = deltas (Net (drop 1 (weights net)) (biases net)) output (targets tdata)
             deltaWeight = deltaWeights (init activation) delta
             weights' = zipWith (-) (weights net) deltaWeight
             biases' = zipWith (-) (biases net) delta
             net' = Net weights' biases'
         in
-            net' : train net' input target
+            net' : train net' tdata
 
     classify :: (Floating a, Ord a)
         => Matrix a
@@ -137,12 +143,20 @@ module Network
             head sorted
     classify _ _ = error "Bad neural network configuration."
 
-    -- IO Utilities
+    -- IO Utilities.
 
-    -- Reads a neural network from a file
+    -- Reads a neural network from a file.
     readNet :: (Read a, Floating a) => FilePath -> IO (Net a)
     readNet = fmap read . readFile
 
-    -- Writes a neural network to a file
+    -- Reads training data from a file.
+    readTrainingData :: (Read a, Floating a) => FilePath -> IO (Training a)
+    readTrainingData = fmap read . readFile
+
+    -- Writes a neural network to a file.
     writeNet :: (Show a, Floating a) => FilePath -> Net a -> IO ()
     writeNet = (. show) . writeFile
+
+    -- Writes training data to a file.
+    writeTrainingData :: (Show a, Floating a) => FilePath -> Training a -> IO ()
+    writeTrainingData = (. show) . writeFile
