@@ -1,52 +1,148 @@
-{-
-https://www.youtube.com/watch?v=gl3lfL-g5mA
-
--- arbitrary layer, l
-delta[l] = (weights[l+1] * delta[l+1]) |*| sigma' output[l]
-
--- last layer, L
-delta[L] = (activations[L] - target[L]) |*| sigma' output[L]
-
-
--}
-
-module Network 
+module Network
     (   Net (..)
-    ,   propagate
+    ,   transfer
+    ,   outputs
+    ,   activations
+    ,   deltas
+    ,   deltaWeights
+    ,   train
+    ,   classify
     ,   readNet
-    ,   loss
+    ,   writeNet
     )   where
 
-import Matrix
 
-data Net = Net 
-    {   activations :: Matrix Double
-    ,   weights :: [Matrix Double]
-    ,   biases :: [Matrix Double]
-    }   deriving (Read, Show, Eq)
+    import Matrix
+    import qualified Data.List
 
-sigmoid :: Floating a => a -> a
-sigmoid x = 1 / (1 + exp (-x))
 
-output :: Floating a => Matrix a -> Matrix a -> Matrix a -> Matrix a
-output a w b = w * a + b
+    -- A simple wrapper for a neural network.
 
-activate :: Floating a => Matrix a -> Matrix a
-activate = fmap sigmoid
+    data Net a = Net
+        {   weights :: [Matrix a]
+        ,   biases :: [Matrix a]
+        }   deriving (Read, Show, Eq)
 
-propStep :: Floating a => Matrix a -> Matrix a -> Matrix a -> Matrix a
-propStep a w b = activate (output a w b)
 
-propagate :: Net -> [Matrix Double]
-propagate (Net _ [] _) = []
-propagate (Net _ _ []) = []
-propagate (Net a (w : ws) (b : bs)) =
-    layer : propagate (Net layer ws bs)
-    where
-        layer = propStep a w b
+    -- Transfer functions.
 
-readNet :: FilePath -> IO Net
-readNet f = fmap read (readFile f)
+    sigmoid :: (Floating a) => a -> a
+    sigmoid x = 1 / (1 + exp (-x))
 
-loss :: Floating a => Matrix a -> Matrix a -> Matrix a
-loss target actual = fmap (\n -> 0.5 * n ** 2) (target - actual)
+    sigmoid' :: (Floating a) => a -> a
+    sigmoid' x = sigmoid x * (1 - sigmoid x)
+
+    transfer :: (Floating a) => Matrix a -> Matrix a
+    transfer = fmap sigmoid
+
+    transfer' :: (Floating a) => Matrix a -> Matrix a
+    transfer' = fmap sigmoid'
+
+
+    -- Forward propagation functions.
+
+    -- Calculates the value of each output layer.
+    outputs :: (Floating a)
+        => Net a
+        -> Matrix a
+        -> [Matrix a]
+    outputs net input =
+        let
+            out (w:ws) (b:bs) i =
+                layer : out ws bs (transfer layer)
+                where
+                    layer = transpose w * i + b
+            out [] [] _ = []
+            out _ _ _ = error "Bad neural network configuration."
+        in
+            out (weights net) (biases net) input
+
+    -- Calculates the value of each activation layer.
+    activations :: (Floating a)
+        => Net a
+        -> Matrix a
+        -> [Matrix a]
+    activations net input =
+        let
+            act (w:ws) (b:bs) i = 
+                layer : act ws bs layer 
+                where
+                    layer = transfer (transpose w * i + b)
+            act [] [] _ = []
+            act _ _ _ = error "Bad neural network configuration."
+        in
+            input : act (weights net) (biases net) input
+
+
+    -- Back propagation functions.
+
+    -- Calculates the delta value for each output layer.
+    deltas :: (Floating a)
+        => Net a
+        -> [Matrix a]
+        -> Matrix a
+        -> [Matrix a]
+    deltas net output target =
+        let
+            del (w:ws) (o:os) t =
+                layer : others
+                where
+                    layer = (w * head others) |*| transfer' o
+                    others = del ws os t
+            del _ [o] t = [(transfer o - t) |*| transfer' t]
+            del _ _ _ = error "Bad neural network configuration."
+        in
+            del (weights net) output target
+
+    -- Calculates the delta value for each weight.
+    deltaWeights :: (Floating a)
+        => [Matrix a]
+        -> [Matrix a]
+        -> [Matrix a]
+    deltaWeights (a:activation) (d:delta) =
+        layer : others
+        where
+            layer = a * transpose d
+            others = deltaWeights activation delta
+    deltaWeights [] [] = []
+    deltaWeights _ _ = error "Bad neural network configuration."
+
+    -- Adjusts a network's weights and biases to better fit the given input to target matrix.
+    train :: (Floating a) 
+        => Net a 
+        -> Matrix a 
+        -> Matrix a 
+        -> [Net a]
+    train net input target =
+        let
+            output = outputs net input
+            activation = activations net input
+            delta = deltas (Net (drop 1 (weights net)) (biases net)) output target
+            deltaWeight = deltaWeights (init activation) delta
+            weights' = zipWith (-) (weights net) deltaWeight
+            biases' = zipWith (-) (biases net) delta
+            net' = Net weights' biases'
+        in
+            net' : train net' input target
+
+    classify :: (Floating a, Ord a)
+        => Matrix a
+        -> [String]
+        -> (a, String)
+    classify (Matrix [activation]) classifiers =
+        let
+            p (a,_) (b,_) = if a > b then GT else LT
+            sorted = Data.List.sortBy p (zip activation classifiers)
+        in
+            head sorted
+    classify _ _ = error "Bad neural network configuration."
+
+    -- IO Utilities
+
+    -- Reads a neural network from a file
+    readNet :: (Read a, Floating a) => FilePath -> IO (Net a)
+    readNet = fmap read . readFile
+
+    -- Writes a neural network to a file
+    writeNet :: (Show a, Floating a) => FilePath -> Net a -> IO ()
+    writeNet = (. show) . writeFile
