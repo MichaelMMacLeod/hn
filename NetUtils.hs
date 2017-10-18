@@ -6,10 +6,14 @@ module NetUtils
     ,   deltas
     ,   deltaWeights
     ,   train
+    ,   classify
+    ,   readNet
+    ,   writeNet
     )   where
 
 
     import Matrix
+    import qualified Data.List
 
 
     -- A simple wrapper for a neural network.
@@ -120,3 +124,25 @@ module NetUtils
             net' = Net weights' biases'
         in
             net' : train net' input target
+
+    classify :: (Floating a, Ord a)
+        => Matrix a
+        -> [String]
+        -> (a, String)
+    classify (Matrix [activation]) classifiers =
+        let
+            p (a,_) (b,_) = if a > b then GT else LT
+            sorted = Data.List.sortBy p (zip activation classifiers)
+        in
+            head sorted
+    classify _ _ = error "Bad neural network configuration."
+
+    -- IO Utilities
+
+    -- Reads a neural network from a file
+    readNet :: (Read a, Floating a) => FilePath -> IO (Net a)
+    readNet = fmap read . readFile
+
+    -- Writes a neural network to a file
+    writeNet :: (Show a, Floating a) => FilePath -> Net a -> IO ()
+    writeNet = (. show) . writeFile
