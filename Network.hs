@@ -181,17 +181,17 @@ module Network
 
     -- Generates a randomized list of correctly-sized bias layers 
     -- using the number of neurons in each output layer.
-    randBiases :: (Floating a, Random a) => [Int] -> IO [Matrix a]
-    randBiases (x:xs) = do
-        matrix <- randMatrix (x,1)
-        others <- randBiases xs
+    randBiases :: (Floating a, Random a) => ([Int], Int) -> IO [Matrix a]
+    randBiases ((x:xs),n) = do
+        matrix <- randMatrix (x,n)
+        others <- randBiases (xs,n)
         return (matrix : others)
     randBiases _ = return []
 
     -- Generates a randomized Net of correctly-sized weight and bias
     -- layers using the number of neurons in each activation layer.
-    randNet :: (Floating a, Random a) => [Int] -> IO (Net a)
-    randNet as = do
+    randNet :: (Floating a, Random a) => ([Int], Int) -> IO (Net a)
+    randNet (as,n) = do
         ws <- randWeights as
-        bs <- randBiases (tail as)
+        bs <- randBiases (tail as, n)
         return (Net ws bs)
